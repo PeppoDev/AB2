@@ -1,15 +1,15 @@
+'''
+Alunos:
+Ruan Víctor Barros Nunes - 19111177
+Felyphe Henrick Nicacio da Silva - 19111472
+'''
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
 data = pd.read_csv("./assets/StudentsPerformance.csv")
 
-# gerador de amostra variando com o tamanho passado e o dataset
-# amostra buscada usando aleatoriedade
-def sample(items: pd.DataFrame, size: int):
-    return items.sample(size)
-
-# funçao de renderização do gráfico de disperssão baseado em duas colunas
+# funçao de renderizacao do grafico de disperssao baseado em duas colunas
 def render_graph(variables: list, labels: list):
     plt.scatter(variables[0], variables[1])
     plt.xlabel(f"{labels[0]}")

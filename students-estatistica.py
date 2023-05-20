@@ -1,3 +1,8 @@
+'''
+Alunos:
+Ruan Víctor Barros Nunes - 19111177
+Felyphe Henrick Nicacio da Silva - 19111472
+'''
 import pandas as pd
 import numpy as np
 
@@ -8,7 +13,6 @@ data = pd.read_csv("./assets/StudentsPerformance.csv")
 # amostra buscada usando aleatoriedade
 def sample(items: pd.DataFrame, size: int):
     return items.sample(size)
-
 
 # filtro por gênero e gerador de amostra
 def get_sample_by_gender(gender: str):

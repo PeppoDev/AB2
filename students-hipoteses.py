@@ -1,92 +1,86 @@
+'''
+Alunos:
+Ruan Víctor Barros Nunes - 19111177
+Felyphe Henrick Nicacio da Silva - 19111472
+'''
+
 import pandas as pd
 import numpy as np
 from scipy import stats
 
 # Leitura do arquivo CSV e exibição das primeiras linhas do DataFrame
-df = pd.read_csv('assets/StudentsPerformance.csv')
-df.head()
+data = pd.read_csv('assets/StudentsPerformance.csv')
 
-# Filtragem dos dados para o gênero masculino e feminino
-male = df.loc[df['gender'] == 'male']
-female = df.loc[df['gender'] == 'female']
-
-# Função para calcular o intervalo de confiança
+# H0 Media masculina math > IC media femino math
+# HA Media masculina math <= IC media femino math
 
 
-def intervalo_confianca(data, nivel_confianca=0.95):
-    media_dados = np.mean(data)
-    desvio_padrao = np.std(data, ddof=1)
+# gerador de amostra variando com o tamanho passado e o dataset
+# amostra buscada usando aleatoriedade
+def sample(items: pd.DataFrame, size: int):
+    return items.sample(size)
+
+
+# filtro por gênero e gerador de amostra
+def get_sample_by_gender(gender: str):
+    gender_map = data.query(f'gender == @gender')
+    gender_map = sample(gender_map, 100)
+    return gender_map
+
+
+# funcao que calcula o limite superior do intervalo de confiaça da média das notas recebidas
+def confidence_interval(sample: pd.Series, confidence):
+    # normalização do array, não é tão necessário mas evita alguns problemas
+    data = np.array(sample)
+    # tamanho da amostra
     n = len(data)
-    t_critico = stats.t.ppf((1 + nivel_confianca) / 2, df=n-1)
-    margem_erro = t_critico * desvio_padrao / np.sqrt(n)
-    intervalo_confianca = (media_dados - margem_erro,
-                           media_dados + margem_erro)
-    return intervalo_confianca
+
+    # calculo automático do erro padrão
+    standard_error = stats.sem(data)
+    mean = np.mean(data)
+
+    # calculo da margem usando ppf
+    margin = standard_error * stats.t.ppf((confidence + 1)/2., n-1)
+    # calculo e retorno do intervalo
+    return mean+margin
+
+# funcao que calcula a media baseado numa coluna e num dataset passdo
 
 
-'''Função para realizar o teste de hipótese para notas de matemática para verificar se a média de notas em matemática
-para o gênero masculino é superior ao valor máximo do IC da média de notas em matemática
-para o gênero feminino'''
-# ALTERNATIVA A
+def mean_calc(items: pd.DataFrame, label: str):
+    mean = np.mean(items[label])
+    return mean
 
 
-def teste_hipotese_genero_matematica_notas(notas_masculino, IC_feminino, alpha=0.05):
-    tamanho = len(notas_masculino)
-    t_obs = (np.mean(notas_masculino) -
-             IC_feminino[1]) / (np.std(notas_masculino, ddof=1) / np.sqrt(tamanho))
-    p_valor = 1 - stats.t.cdf(np.abs(t_obs), df=tamanho-1)
-    if p_valor < alpha:
-        decisao = "Rejeitar H0. A média de notas em matemática para o gênero masculino é superior ao valor máximo do IC do grupo feminino."
+# funcao que calcula o test de hipotese retornando o respectivo veredito recebendo parametros dinamicos relativos as alternativas
+def hypothesis_test(gender: str, gender_comparative: str, label: str, alternative: str):
+    gender_grades = get_sample_by_gender(gender)[label]
+    gender_comparative_grades = get_sample_by_gender(gender_comparative)[label]
+
+    superior_ci = confidence_interval(
+        gender_comparative_grades, 0.95)
+    size = len(gender_grades)
+
+    # Calculando a estatística de teste t
+    t_obs = (np.mean(gender_grades) - superior_ci) / \
+        (np.std(gender_grades, ddof=1) / np.sqrt(size))
+
+    # Calculando o valor-p
+    value_p = 1 - stats.t.cdf(np.abs(t_obs), df=size-1)
+    alpha = 0.05
+
+    if value_p < alpha:
+        veredict = f"Rejeitar Hipotese nula pois o valor p ({value_p}) é menor que alpha ({alpha}), logo, a média de {label} para o gênero {gender} é superior ao valor máximo do IC do grupo {gender_comparative}."
     else:
-        decisao = "Não rejeitar H0. Não há evidência estatística de que a média de notas em matemática para o gênero masculino seja superior ao valor máximo do IC do grupo feminino."
-    return decisao
+        veredict = f"Não rejeitar a hipótese nula pois o valor p ({value_p}) não é menor que alpha ({alpha}). Portanto,  média de {label} para o gênero {gender} não é superior ao valor máximo do IC do grupo {gender_comparative}."
+
+    print(f"""{"-"*50}
+       Alternativa: {alternative}
+    """)
+    print(veredict)
 
 
-# Impressão do resultado do teste de hipótese para notas de matemática do gênero masculino
-print('Alternativa A')
-print(teste_hipotese_genero_matematica_notas(
-    notas_masculino=male['math score'].values, IC_feminino=intervalo_confianca(data=female['math score'])), '\n')
-
-'''Função para realizar o teste de hipótese para notas de leitura do gênero feminino para verificar se a média de notas em leitura para
-o gênero feminino é superior ao valor máximo do IC da média de notas em leitura para o gênero masculino'''
-# ALTERNATIVA B
-
-
-def teste_hipotese_genero_leitura_notas(notas_feminino, IC_masculino, alpha=0.05):
-    tamanho = len(notas_feminino)
-    t_obs = (np.mean(notas_feminino) -
-             IC_masculino[1]) / (np.std(notas_feminino, ddof=1) / np.sqrt(tamanho))
-    p_valor = 1 - stats.t.cdf(np.abs(t_obs), df=tamanho-1)
-    if p_valor < alpha:
-        decisao = "Rejeitar H0. A média de notas em leitura para o gênero feminino é superior ao valor máximo do IC do grupo masculino."
-    else:
-        decisao = "Não rejeitar H0. Não há evidência estatística de que a média de notas em leitura para o gênero feminino seja superior ao valor máximo do IC do grupo masculino."
-    return decisao
-
-
-# Impressão do resultado do teste de hipótese para notas de leitura do gênero feminino
-print('Alternativa B')
-print(teste_hipotese_genero_leitura_notas(
-    notas_feminino=female['math score'].values, IC_masculino=intervalo_confianca(data=male['math score'])), '\n')
-
-'''Função para realizar o teste de hipótese para notas de escrita do gênero feminino para verificar se a média de notas em escrita para
-o gênero feminino é superior ao valor máximo do IC da média de notas em escrita para o gênero masculino'''
-# ALTERNATIVA C
-
-
-def teste_hipotese_genero_escrita_notas(notas_feminino, IC_masculino, alpha=0.05):
-    tamanho = len(notas_feminino)
-    t_obs = (np.mean(notas_feminino) -
-             IC_masculino[1]) / (np.std(notas_feminino, ddof=1) / np.sqrt(tamanho))
-    p_valor = 1 - stats.t.cdf(np.abs(t_obs), df=tamanho-1)
-    if p_valor < alpha:
-        decisao = "Rejeitar H0. A média de notas em escrita para o gênero feminino é superior ao valor máximo do IC do grupo masculino."
-    else:
-        decisao = "Não rejeitar H0. Não há evidência estatística de que a média de notas em escrita para o gênero feminino seja superior ao valor máximo do IC do grupo masculino."
-    return decisao
-
-
-# Impressão do resultado do teste de hipótese para notas de escrita do gênero feminino
-print('Alternativa C')
-print(teste_hipotese_genero_escrita_notas(
-    notas_feminino=female['math score'].values, IC_masculino=intervalo_confianca(data=male['math score'])), '\n')
+# main
+hypothesis_test("male", "female", "math score", "A")
+hypothesis_test("female", "male", "reading score", "B")
+hypothesis_test("female", "male", "writing score", "C")

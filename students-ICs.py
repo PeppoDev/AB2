@@ -1,3 +1,8 @@
+'''
+Alunos:
+Ruan Víctor Barros Nunes - 19111177
+Felyphe Henrick Nicacio da Silva - 19111472
+'''
 import pandas as pd
 import numpy as np
 import scipy
@@ -9,8 +14,6 @@ def sample(items: pd.DataFrame, size: int):
     return items.sample(size)
 
 # filtro por gênero e gerador de amostra
-
-
 def get_sample_by_gender(gender: str):
     gender_map = data.query(f'gender == @gender')
     gender_map = sample(gender_map, 100)
